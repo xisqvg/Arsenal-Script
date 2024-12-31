@@ -12,6 +12,7 @@ local espEnabled = true
 local aimlockKey = Enum.KeyCode.F
 local teamCheckEnabled = true
 local uiVisible = true
+local aimPart = "Head"
 
 local espCache = {}
 
@@ -19,7 +20,7 @@ local screenGui = Instance.new("ScreenGui")
 screenGui.Parent = game.CoreGui
 
 local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 250, 0, 180)
+frame.Size = UDim2.new(0, 250, 0, 220)
 frame.Position = UDim2.new(0.5, -125, 0.5, -75)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 frame.BorderSizePixel = 0
@@ -44,9 +45,20 @@ teamCheckToggle.Position = UDim2.new(0.5, -100, 0, 100)
 teamCheckToggle.Text = "Team Check: ON"
 teamCheckToggle.Parent = frame
 
+local aimPartButton = Instance.new("TextButton")
+aimPartButton.Size = UDim2.new(0, 200, 0, 30)
+aimPartButton.Position = UDim2.new(0.5, -100, 0, 140)
+aimPartButton.Text = "Aim Part: Head"
+aimPartButton.Parent = frame
+
+aimPartButton.MouseButton1Click:Connect(function()
+    aimPart = aimPart == "Head" and "HumanoidRootPart" or "Head"
+    aimPartButton.Text = "Aim Part: " .. (aimPart == "Head" and "Head" or "Torso")
+end)
+
 local keybindBox = Instance.new("TextBox")
 keybindBox.Size = UDim2.new(0, 200, 0, 30)
-keybindBox.Position = UDim2.new(0.5, -100, 0, 140)
+keybindBox.Position = UDim2.new(0.5, -100, 0, 180)
 keybindBox.PlaceholderText = "Set Aimlock Key"
 keybindBox.Parent = frame
 
@@ -135,19 +147,19 @@ local function getNearestTargetToCursor()
     local shortestDistance = math.huge
 
     for _, player in pairs(Players:GetPlayers()) do
-        if player ~= localPlayer and player.Character and player.Character:FindFirstChild("Head") then
+        if player ~= localPlayer and player.Character and player.Character:FindFirstChild(aimPart) then
             if teamCheckEnabled and player.Team == localPlayer.Team then
                 continue
             end
 
-            local head = player.Character.Head
-            local screenPosition, onScreen = camera:WorldToViewportPoint(head.Position)
+            local part = player.Character[aimPart]
+            local screenPosition, onScreen = camera:WorldToViewportPoint(part.Position)
             local mousePos = Vector2.new(Mouse.X, Mouse.Y)
             local distance = (Vector2.new(screenPosition.X, screenPosition.Y) - mousePos).Magnitude
 
             if onScreen and distance < shortestDistance then
                 shortestDistance = distance
-                nearest = head
+                nearest = part
             end
         end
     end
@@ -173,9 +185,9 @@ RunService.RenderStepped:Connect(function()
         if target.Parent and target.Parent:FindFirstChild("HumanoidRootPart") and target.Parent.Humanoid.Health > 0 and target.Position.Y > -10 then
             camera.CFrame = CFrame.new(camera.CFrame.Position, target.Position)
         else
+            target = nil
             aimlockEnabled = false
             aimlockToggle.Text = "Aimlock: OFF"
-            target = nil
         end
     end
 end)
